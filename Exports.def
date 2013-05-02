@@ -1,0 +1,6 @@
+LIBRARY "addin"
+
+EXPORTS
+GetClassObject
+DestroyObject
+GetClassNames

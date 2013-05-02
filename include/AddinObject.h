@@ -34,9 +34,6 @@ namespace Addin1C {
 		}
 
 	protected:
-		static const int PROP_READABLE = 1;
-		static const int PROP_WRITEABLE = 2;
-
 		AddinObject();
 
 	public:

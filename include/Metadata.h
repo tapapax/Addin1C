@@ -8,6 +8,9 @@
 
 namespace Addin1C {
 
+	const int PROP_READABLE = 1;
+	const int PROP_WRITEABLE = 2;
+
 	typedef std::vector<Variant>& VariantParameters;
 	
 	template <class Object>
@@ -42,7 +45,7 @@ namespace Addin1C {
 			mFunctions.push_back(func);
 		}
 		void addProperty(std::wstring englishName, std::wstring localName, ComponentParameterSetter setter, ComponentParameterGetter getter, int modes = PROP_READABLE | PROP_WRITEABLE) {
-			Property prop = { englishName, localName, setter, getter, modes };
+			Property prop = { englishName, localName, modes, setter, getter };
 			mProperties.push_back(prop);
 		}
 	

@@ -11,11 +11,9 @@ namespace Addin1C {
 	const int PROP_READABLE = 1;
 	const int PROP_WRITEABLE = 2;
 
-	typedef std::vector<Variant>& VariantParameters;
-	
 	template <class Object>
 	class ClassMetadata {
-		typedef Variant (Object::*ComponentFunction)(VariantParameters);
+		typedef Variant (Object::*ComponentFunction)(VariantParameters&);
 		typedef void (Object::*ComponentParameterSetter)(Variant);
 		typedef Variant (Object::*ComponentParameterGetter)();
 	

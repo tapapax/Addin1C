@@ -19,6 +19,8 @@ namespace Addin1C {
 
 	template <class ConcreteAddin>
 	class AddinObject : public AbstractAddinObject {
+		friend class AddinManager;
+
 	public:
 		typedef ClassMetadata<ConcreteAddin> Metadata;
 
@@ -27,17 +29,18 @@ namespace Addin1C {
 		BaseNativeAPI::IAddInDefBase* mConnect;
 		BaseNativeAPI::IMemoryManager* mMemoryManager;
 
+		AbstractAddinObject* clone() { return new ConcreteAddin; }
+
 		static inline Metadata& getMetadata() {
 			static Metadata md = ConcreteAddin::getMetadata();
 			md.addFunction(L"ErrorDescription", L"ќписаниеќшибки", 0, &ConcreteAddin::getErrorDescription);
 			return md;
 		}
 
-	protected:
-		AddinObject();
-
-	public:
-		virtual ~AddinObject() {}
+		static inline Metadata& metadata() {
+			static Metadata& md = getMetadata();
+			return md;
+		}
 
 		virtual bool ADDIN_API Init(void*);
 		virtual bool ADDIN_API setMemManager(void* mem);
@@ -61,20 +64,19 @@ namespace Addin1C {
 		virtual bool ADDIN_API CallAsFunc(const long lMethodNum, BaseNativeAPI::tVariant* pvarRetValue, BaseNativeAPI::tVariant* paParams, const long lSizeArray);
 		virtual void ADDIN_API SetLocale(const WCHAR_T* loc);
 
-		Variant getErrorDescription(VariantParameters);
+	protected:
+		AddinObject();
 
-		AbstractAddinObject* clone() { return new ConcreteAddin; }
+	public:
+		virtual ~AddinObject() {}
+
+		Variant getErrorDescription(VariantParameters&);
 
 		void message(std::wstring msg, long code = 0);
-
-		static inline Metadata& metadata() {
-			static Metadata& md = getMetadata();
-			return md;
-		}
 	};
 
 	template <class ConcreteAddin>
-	Variant AddinObject<ConcreteAddin>::getErrorDescription(VariantParameters) {
+	Variant AddinObject<ConcreteAddin>::getErrorDescription(VariantParameters&) {
 		return mLastErrorDescription;
 	}
 
@@ -311,17 +313,16 @@ namespace Addin1C {
 
 		try {
 
-			std::vector<Variant> smartParameters(lSizeArray);
-			for (int i = 0; i < lSizeArray; i++) {
-				smartParameters[i] = extractVariant(paParams + i);
-			}
+			// extract parameters
+			VariantParameters smartParameters(paParams, lSizeArray);
 
+			// call the handler function
 			Variant result = CALL_POINTER_MEMBER((ConcreteAddin*)this, funcs[lMethodNum].method)(smartParameters);
 		
-			for (int i = 0; i < lSizeArray; i++) {
-				packVariant(smartParameters[i], paParams + i, mMemoryManager);
-			}
+			// pack back parameters (only changed)
+			smartParameters.pack(paParams, mMemoryManager);
 
+			// pack function result
 			packVariant(result, pvarRetValue, mMemoryManager);
 
 			error = false;

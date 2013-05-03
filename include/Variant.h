@@ -4,6 +4,7 @@
 
 #include <string>
 #include <exception>
+#include <vector>
 
 #include "BaseNativeAPI.h"
 
@@ -13,6 +14,10 @@
 	operator type() { return getValue<type>(); }
 
 namespace Addin1C {
+
+	class Variant;
+	Variant extractVariant(BaseNativeAPI::tVariant* var);
+	void packVariant(Variant& svar, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager*);
 
 	class Undefined {};
 
@@ -26,6 +31,8 @@ namespace Addin1C {
 	};
 
 	class Variant {
+		friend class VariantParameters;
+		
 	public:
 		class BadCast : public std::exception {
 			virtual const char* what() const throw() {
@@ -96,8 +103,35 @@ namespace Addin1C {
 		Content* mContent;
 	};
 
-	Variant extractVariant(BaseNativeAPI::tVariant* var);
-	void packVariant(Variant& svar, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager*);
+	class VariantParameters {
+		struct VariantWithInitialContent {
+			Variant variant;
+			Variant::Content* content;
+		};
+		
+		std::vector<VariantWithInitialContent> mParameters;
+
+	public:
+		void pack(BaseNativeAPI::tVariant* baseParameters, BaseNativeAPI::IMemoryManager* manager) {
+			for (size_t i = 0; i < mParameters.size(); i++) {
+				if (mParameters[i].variant.mContent != mParameters[i].content) packVariant(mParameters[i].variant, baseParameters + i, manager);
+			}
+		}
+
+		VariantParameters(BaseNativeAPI::tVariant* baseParameters, size_t count)
+			:
+			mParameters(count)
+		{
+			for (size_t i = 0; i < count; i++) {
+				mParameters[i].variant = extractVariant(baseParameters + i);
+				mParameters[i].content = mParameters[i].variant.mContent;
+			}
+		}
+
+		Variant& operator[](size_t i) {
+			return mParameters[i].variant;
+		}
+	};
 
 }
 

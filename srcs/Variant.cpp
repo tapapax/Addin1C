@@ -4,34 +4,42 @@
 namespace Addin1C {
 
 	Variant extractVariant(BaseNativeAPI::tVariant* var) {
-		Variant result;
-
-		if (var->vt == BaseNativeAPI::VTYPE_BOOL) result = var->bVal;
-		else if (var->vt == BaseNativeAPI::VTYPE_I2 || var->vt == BaseNativeAPI::VTYPE_I4 || var->vt == BaseNativeAPI::VTYPE_ERROR || var->vt == BaseNativeAPI::VTYPE_UI1) result = (long)var->lVal;
-		else if (var->vt == BaseNativeAPI::VTYPE_R4 || var->vt == BaseNativeAPI::VTYPE_R8 /*|| var->vt == VTYPE_CY*/) result = var->dblVal;
-		else if (var->vt == BaseNativeAPI::VTYPE_PWSTR) result = std::wstring(var->pwstrVal, var->wstrLen);
-		else if (var->vt == BaseNativeAPI::VTYPE_EMPTY) result = Undefined();
-		else throw std::runtime_error("<unsupported variant type>");
-
-		return result;
+		switch (var->vt) {
+		case BaseNativeAPI::VTYPE_BOOL:
+			return var->bVal;
+		case BaseNativeAPI::VTYPE_I2:
+		case BaseNativeAPI::VTYPE_I4:
+		case BaseNativeAPI::VTYPE_ERROR:
+		case BaseNativeAPI::VTYPE_UI1:
+			return (long)var->lVal;
+		case BaseNativeAPI::VTYPE_R4:
+		case BaseNativeAPI::VTYPE_R8:
+			return var->dblVal;
+		case BaseNativeAPI::VTYPE_PWSTR:
+			return std::wstring(var->pwstrVal, var->wstrLen);
+		case BaseNativeAPI::VTYPE_EMPTY:
+			return Undefined();
+		default:
+			throw std::runtime_error("<unsupported variant type>");
+		}
 	}
 
-	void putDoubleInVariant(const double value, BaseNativeAPI::tVariant* var) {
+	inline void putDoubleInVariant(const double value, BaseNativeAPI::tVariant* var) {
 		TV_VT(var) = BaseNativeAPI::VTYPE_R8;
 		TV_R8(var) = value;
 	}
 
-	void putLongInVariant(const long value, BaseNativeAPI::tVariant* var) {
+	inline void putLongInVariant(const long value, BaseNativeAPI::tVariant* var) {
 		TV_VT(var) = BaseNativeAPI::VTYPE_I4;
 		TV_I4(var) = value;
 	}
 
-	void putBoolInVariant(const bool value, BaseNativeAPI::tVariant* var) {
+	inline void putBoolInVariant(const bool value, BaseNativeAPI::tVariant* var) {
 		TV_VT(var) = BaseNativeAPI::VTYPE_BOOL;
 		TV_BOOL(var) = value;
 	}
 
-	void putWStringInVariant(const std::wstring& str, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
+	inline void putWStringInVariant(const std::wstring& str, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
 		wchar_t* ptr;
 		auto size = (str.size() + 1) * sizeof(wchar_t);
 
@@ -46,7 +54,7 @@ namespace Addin1C {
 		var->wstrLen = str.size();
 	}
 
-	void putStringInVariant(const std::string& str, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
+	inline void putStringInVariant(const std::string& str, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
 		char* ptr;
 		auto size = (str.size() + 1) * sizeof(char);
 
@@ -61,7 +69,7 @@ namespace Addin1C {
 		var->strLen = str.size();
 	}
 
-	void putBinaryInVariant(const BinaryData& blob, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager){
+	inline void putBinaryInVariant(const BinaryData& blob, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager){
 		putStringInVariant(blob.getData(), var, memoryManager);
 		TV_VT(var) = BaseNativeAPI::VTYPE_BLOB;
 	}

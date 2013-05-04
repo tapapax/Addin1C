@@ -9,7 +9,6 @@ namespace Addin1C {
 			return var->bVal;
 		case BaseNativeAPI::VTYPE_I2:
 		case BaseNativeAPI::VTYPE_I4:
-		case BaseNativeAPI::VTYPE_ERROR:
 		case BaseNativeAPI::VTYPE_UI1:
 			return (long)var->lVal;
 		case BaseNativeAPI::VTYPE_R4:
@@ -17,6 +16,7 @@ namespace Addin1C {
 			return var->dblVal;
 		case BaseNativeAPI::VTYPE_PWSTR:
 			return std::wstring(var->pwstrVal, var->wstrLen);
+		case BaseNativeAPI::VTYPE_ERROR:
 		case BaseNativeAPI::VTYPE_EMPTY:
 			return Undefined();
 		default:

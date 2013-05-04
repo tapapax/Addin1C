@@ -22,6 +22,7 @@ namespace Addin1C {
 			std::wstring englishName;
 			std::wstring localName;
 			long parametersCount;
+			long optionalParametersCount;
 			ComponentFunction method;
 		};
 		struct Property {
@@ -38,8 +39,8 @@ namespace Addin1C {
 			mName(name)
 		{}
 	
-		void addFunction(std::wstring englishName, std::wstring localName, long parametersCount, ComponentFunction method) {
-			Function func = { englishName, localName, parametersCount, method };
+		void addFunction(std::wstring englishName, std::wstring localName, long parametersCount, ComponentFunction method, long optionalParametersCount = 0) {
+			Function func = { englishName, localName, parametersCount, optionalParametersCount, method };
 			mFunctions.push_back(func);
 		}
 		void addProperty(std::wstring englishName, std::wstring localName, ComponentParameterSetter setter, ComponentParameterGetter getter, int modes = PROP_READABLE | PROP_WRITEABLE) {

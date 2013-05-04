@@ -12,19 +12,24 @@
 #include "AddinManager.h"
 #include "BaseNativeAPI.h"
 
-#define CALL_MEMBER_FN(object, ptrToMember) ((object).*(ptrToMember))
-#define CALL_POINTER_MEMBER(pointer, member) CALL_MEMBER_FN(*(pointer), (member))
+#define ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(member) ((*(ConcreteAddin*)this).*(member))
 
 namespace Addin1C {
 
 	template <class ConcreteAddin>
 	class AddinObject : public AbstractAddinObject {
-		friend class AddinManager;
-
 	public:
 		typedef ClassMetadata<ConcreteAddin> Metadata;
 
+		AddinObject();
+		virtual ~AddinObject() {}
+
+		Variant getErrorDescription(VariantParameters&);
+		void message(std::wstring msg, long code = 0);
+
 	private:
+		friend class AddinManager;
+
 		std::wstring mLastErrorDescription;
 		BaseNativeAPI::IAddInDefBase* mConnect;
 		BaseNativeAPI::IMemoryManager* mMemoryManager;
@@ -63,16 +68,6 @@ namespace Addin1C {
 		virtual bool ADDIN_API CallAsProc(const long lMethodNum, BaseNativeAPI::tVariant* paParams, const long lSizeArray);
 		virtual bool ADDIN_API CallAsFunc(const long lMethodNum, BaseNativeAPI::tVariant* pvarRetValue, BaseNativeAPI::tVariant* paParams, const long lSizeArray);
 		virtual void ADDIN_API SetLocale(const WCHAR_T* loc);
-
-	protected:
-		AddinObject();
-
-	public:
-		virtual ~AddinObject() {}
-
-		Variant getErrorDescription(VariantParameters&);
-
-		void message(std::wstring msg, long code = 0);
 	};
 
 	template <class ConcreteAddin>
@@ -169,7 +164,7 @@ namespace Addin1C {
 
 		try {
 
-			packVariant(CALL_POINTER_MEMBER((ConcreteAddin*)this, property.getter)(), pvarPropVal, mMemoryManager);
+			packVariant(ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(property.getter)(), pvarPropVal, mMemoryManager);
 
 			error = false;
 
@@ -199,7 +194,7 @@ namespace Addin1C {
 
 		try {
 
-			CALL_POINTER_MEMBER((ConcreteAddin*)this, property.setter)(extractVariant(varPropVal));
+			ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(property.setter)(extractVariant(varPropVal));
 
 			error = false;
 
@@ -256,7 +251,7 @@ namespace Addin1C {
 	const WCHAR_T* AddinObject<ConcreteAddin>::GetMethodName(const long lMethodNum, const long lMethodAlias) { 
 		auto& funcs = metadata().functions();
 
-		if ((unsigned long)lMethodNum >= funcs.size()) return NULL;
+		if ((size_t)lMethodNum >= funcs.size()) return NULL;
 
 		const std::wstring* name;
 
@@ -279,21 +274,26 @@ namespace Addin1C {
 	long AddinObject<ConcreteAddin>::GetNParams(const long lMethodNum) { 
 		auto& funcs = metadata().functions();
 
-		if ((unsigned long)lMethodNum >= funcs.size()) return 0;
+		if ((size_t)lMethodNum >= funcs.size()) return 0;
 
 		return funcs[lMethodNum].parametersCount;
 	}
 
 	template <class ConcreteAddin>
 	bool AddinObject<ConcreteAddin>::GetParamDefValue(const long lMethodNum, const long lParamNum, BaseNativeAPI::tVariant *pvarParamDefValue) { 
-		TV_VT(pvarParamDefValue)= BaseNativeAPI::VTYPE_EMPTY;
-		return false;
+		if ((size_t)lMethodNum >= metadata().functions().size()) return false;
+
+		if (lParamNum >= metadata().functions()[lMethodNum].parametersCount - metadata().functions()[lMethodNum].optionalParametersCount) {
+			TV_VT(pvarParamDefValue) = BaseNativeAPI::VTYPE_ERROR; // extractValue will convert this value to Undefined.
+		} else {
+			TV_VT(pvarParamDefValue) = BaseNativeAPI::VTYPE_EMPTY;
+		}
+
+		return true;
 	} 
 
 	template <class ConcreteAddin>
 	bool AddinObject<ConcreteAddin>::HasRetVal(const long lMethodNum) { 
-		if ((unsigned long)lMethodNum >= metadata().functions().size()) return false;
-
 		return true;
 	}
 
@@ -306,7 +306,7 @@ namespace Addin1C {
 	bool AddinObject<ConcreteAddin>::CallAsFunc(const long lMethodNum, BaseNativeAPI::tVariant* pvarRetValue, BaseNativeAPI::tVariant* paParams, const long lSizeArray) { 
 		auto& funcs = metadata().functions();
 
-		if ((unsigned long)lMethodNum >= funcs.size()) return false;
+		if ((size_t)lMethodNum >= funcs.size()) return false;
 		if (lSizeArray != funcs[lMethodNum].parametersCount) return false;
 
 		bool error = true;
@@ -317,9 +317,9 @@ namespace Addin1C {
 			VariantParameters smartParameters(paParams, lSizeArray);
 
 			// call the handler function
-			Variant result = CALL_POINTER_MEMBER((ConcreteAddin*)this, funcs[lMethodNum].method)(smartParameters);
+			Variant result = ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(funcs[lMethodNum].method)(smartParameters);
 		
-			// pack back parameters (only changed)
+			// pack back parameters (changed only)
 			smartParameters.pack(paParams, mMemoryManager);
 
 			// pack function result

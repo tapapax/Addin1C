@@ -1,4 +1,11 @@
 
+MANIFEST.XML
+*.zip
+*.lib
+*.dll
+
+!ExampleAddin.sln
+
 Win32
 *.sln
 
@@ -25,9 +32,9 @@ install_manifest.txt
 # Build results
 
 [Dd]ebug*/
-[Rr]elease/
+[Rr]elease*/
 
-build/
+#build/
 
 
 [Tt]est[Rr]esult

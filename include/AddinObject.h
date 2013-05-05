@@ -338,6 +338,7 @@ namespace Addin1C {
 		}
 
 		if (!error) mLastErrorDescription.clear();
+		else message(mLastErrorDescription, 12L);
 
 		return !error;
 	}

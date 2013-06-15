@@ -197,7 +197,7 @@
       <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
     </Link>
     <PostBuildEvent>
-      <Command>Build\packAddin.bat $(ProjectName)_$(Configuration)</Command>
+      <Command>Build\packAddin.bat $(ProjectName)</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

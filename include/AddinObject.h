@@ -47,6 +47,8 @@ namespace Addin1C {
 			return md;
 		}
 
+		void handleExternalException();
+
 		virtual bool ADDIN_API Init(void*);
 		virtual bool ADDIN_API setMemManager(void* mem);
 		virtual long ADDIN_API GetInfo();
@@ -69,6 +71,24 @@ namespace Addin1C {
 		virtual bool ADDIN_API CallAsFunc(const long lMethodNum, BaseNativeAPI::tVariant* pvarRetValue, BaseNativeAPI::tVariant* paParams, const long lSizeArray);
 		virtual void ADDIN_API SetLocale(const WCHAR_T* loc);
 	};
+
+	template <class ConcreteAddin>
+	void Addin1C::AddinObject<ConcreteAddin>::handleExternalException() {
+		try {
+			try {
+				throw;
+			} catch (std::wstring& errorDescription) {
+				mLastErrorDescription = errorDescription;
+			} catch (std::exception& e) {
+				std::string what = e.what();
+				mLastErrorDescription = std::wstring(what.begin(), what.end());
+			} catch (...) {
+				mLastErrorDescription = L"<unknown error>";
+			}
+
+			message(mLastErrorDescription, 11L);
+		} catch (...) {} // to suppress bad_alloc on string operations, for example
+	}
 
 	template <class ConcreteAddin>
 	Variant AddinObject<ConcreteAddin>::getErrorDescription(VariantParameters&) {
@@ -160,26 +180,18 @@ namespace Addin1C {
 
 		auto property = props[lPropNum];
 
-		bool error = true;
-
 		try {
 
 			packVariant(ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(property.getter)(), pvarPropVal, mMemoryManager);
 
-			error = false;
+			mLastErrorDescription.clear();
 
-		} catch (std::wstring& errorDescription) {
-			mLastErrorDescription = errorDescription;
-		} catch (std::exception& e) {
-			std::string what = e.what();
-			mLastErrorDescription = std::wstring(what.begin(), what.end());
 		} catch (...) {
-			mLastErrorDescription = L"<unknown error>";
+			handleExternalException();
+			return false;
 		}
 
-		if (!error) mLastErrorDescription.clear();
-
-		return !error;
+		return true;
 	}
 
 	template <class ConcreteAddin>
@@ -190,27 +202,18 @@ namespace Addin1C {
 
 		auto property = props[lPropNum];
 
-		bool error = true;
-
 		try {
 
 			ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(property.setter)(extractVariant(varPropVal));
 
-			error = false;
+			mLastErrorDescription.clear();
 
-		} catch (std::wstring& errorDescription) {
-			mLastErrorDescription = errorDescription;
-		} catch (std::exception& e) {
-			std::string what = e.what();
-			mLastErrorDescription = std::wstring(what.begin(), what.end());
 		} catch (...) {
-			mLastErrorDescription = L"<unknown error>";
+			handleExternalException();
+			return false;
 		}
 
-		if (!error) mLastErrorDescription.clear();
-		else message(mLastErrorDescription, 10);
-
-		return !error;
+		return true;
 	}
 
 	template <class ConcreteAddin>
@@ -310,8 +313,6 @@ namespace Addin1C {
 		if ((size_t)lMethodNum >= funcs.size()) return false;
 		if (lSizeArray != funcs[lMethodNum].parametersCount) return false;
 
-		bool error = true;
-
 		try {
 
 			// extract parameters
@@ -326,21 +327,14 @@ namespace Addin1C {
 			// pack function result
 			packVariant(result, pvarRetValue, mMemoryManager);
 
-			error = false;
+			mLastErrorDescription.clear();
 
-		} catch (std::wstring& errorDescription) {
-			mLastErrorDescription = errorDescription;
-		} catch (std::exception& e) {
-			std::string what = e.what();
-			mLastErrorDescription = std::wstring(what.begin(), what.end());
 		} catch (...) {
-			mLastErrorDescription = L"<unknown error>";
+			handleExternalException();
+			return false;
 		}
 
-		if (!error) mLastErrorDescription.clear();
-		else message(mLastErrorDescription, 12L);
-
-		return !error;
+		return true;
 	}
 
 	template <class ConcreteAddin>

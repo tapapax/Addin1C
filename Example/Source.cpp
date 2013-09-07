@@ -1,4 +1,4 @@
 
 #include "Header.h"
 
-Calculator prototype;
+ADDIN1C_REGISTER(Calculator);

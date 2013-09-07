@@ -17,6 +17,8 @@
 #include "AddinManager.h"
 #include "BaseNativeAPI.h"
 
+#define ADDIN1C_REGISTER(Object) static Object prot_ ## Object;
+
 #define ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(member) ((*(ConcreteAddin*)this).*(member))
 
 namespace Addin1C {

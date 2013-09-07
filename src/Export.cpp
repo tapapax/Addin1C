@@ -1,11 +1,11 @@
 
 #include "AddinManager.h"
 
-long GetClassObject(const WCHAR_T* wsName, Addin1C::BaseNativeAPI::IComponentBase** pInterface) {
+extern "C" long GetClassObject(const WCHAR_T* wsName, Addin1C::BaseNativeAPI::IComponentBase** pInterface) {
     if(*pInterface) return 0;
 
 	try {
-		*pInterface = Addin1C::AddinManager::getSingleton().createObject(std::wstring(wsName));
+		*pInterface = Addin1C::AddinManager::getSingleton().createObject(Addin1C::engineString(wsName));
 	} catch (...) {
 		return 0;
 	}
@@ -13,7 +13,7 @@ long GetClassObject(const WCHAR_T* wsName, Addin1C::BaseNativeAPI::IComponentBas
     return (long)*pInterface;
 }
 
-long DestroyObject(Addin1C::BaseNativeAPI::IComponentBase** pIntf) {
+extern "C" long DestroyObject(Addin1C::BaseNativeAPI::IComponentBase** pIntf) {
    if(!*pIntf)
       return -1;
 
@@ -22,7 +22,7 @@ long DestroyObject(Addin1C::BaseNativeAPI::IComponentBase** pIntf) {
    return 0;
 }
 
-const WCHAR_T* GetClassNames() {
+extern "C" const WCHAR_T* GetClassNames() {
 	return Addin1C::AddinManager::getSingleton().getClassNames();
 }
 

@@ -1,4 +1,4 @@
-
+п»ї
 #include <AddinObject.h>
 
 class Calculator : public Addin1C::AddinObject<Calculator> {
@@ -9,9 +9,9 @@ public:
 
 	static Metadata getMetadata() {
 		Metadata md(L"Calculator");
-		md.addFunction(L"Multiply5", L"УмножитьНа5", 1, &multiply);
-		md.addFunction(L"ReverseString", L"РазвернутьСтроку", 1, &reverseString);
-		md.addProperty(L"Property", L"Свойство", &setProperty, &getProperty);
+		md.addFunction(L"Multiply5", L"РЈРјРЅРѕР¶РёС‚СЊРќР°5", 1, &Calculator::multiply);
+		md.addFunction(L"ReverseString", L"Р Р°Р·РІРµСЂРЅСѓС‚СЊРЎС‚СЂРѕРєСѓ", 1, &Calculator::reverseString);
+		md.addProperty(L"Property", L"РЎРІРѕР№СЃС‚РІРѕ", &Calculator::setProperty, &Calculator::getProperty);
 		return md;
 	}
 

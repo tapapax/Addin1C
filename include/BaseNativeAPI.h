@@ -2,13 +2,14 @@
 #ifndef BaseNativeAPI_h__
 #define BaseNativeAPI_h__
 
+#include <cstdint>
+#include <locale>
+#include <sys/types.h>
+#include <cstring>
+
 namespace Addin1C {
 
 	namespace BaseNativeAPI {
-
-#ifndef _WINDOWS
-#define _WINDOWS
-#endif
 
 #include "BaseNativeAPI/ComponentBase.h"
 #include "BaseNativeAPI/AddInDefBase.h"

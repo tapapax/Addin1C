@@ -11,6 +11,8 @@ namespace Addin1C {
 	const int PROP_READABLE = 1;
 	const int PROP_WRITEABLE = 2;
 
+	typedef std::basic_string<WCHAR_T> engineString;
+
 	template <class Object>
 	class ClassMetadata {
 		typedef Variant (Object::*ComponentFunction)(VariantParameters&);
@@ -34,9 +36,9 @@ namespace Addin1C {
 		};
 	
 	public:	
-		ClassMetadata(std::wstring name)
+		ClassMetadata(const std::wstring& name)
 			:
-			mName(name)
+			mName(name.cbegin(), name.cend())
 		{}
 	
 		void addFunction(std::wstring englishName, std::wstring localName, long parametersCount, ComponentFunction method, long optionalParametersCount = 0) {
@@ -48,12 +50,12 @@ namespace Addin1C {
 			mProperties.push_back(prop);
 		}
 	
-		const std::wstring& name() { return mName; }
+		const engineString& name() { return mName; }
 		const std::vector<Function>& functions() { return mFunctions; }
 		const std::vector<Property>& properties() { return mProperties; }
 	
 	private:
-		std::wstring mName;
+		engineString mName;
 	
 		std::vector<Function> mFunctions;
 		std::vector<Property> mProperties;

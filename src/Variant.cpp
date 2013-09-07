@@ -1,6 +1,8 @@
 
 #include "Variant.h"
 
+#include <stdexcept>
+
 namespace Addin1C {
 
 	Variant extractVariant(BaseNativeAPI::tVariant* var) {
@@ -15,13 +17,24 @@ namespace Addin1C {
 		case BaseNativeAPI::VTYPE_R8:
 			return var->dblVal;
 		case BaseNativeAPI::VTYPE_PWSTR:
-			return std::wstring(var->pwstrVal, var->wstrLen);
+			return std::wstring(var->pwstrVal, var->pwstrVal + var->wstrLen);
 		case BaseNativeAPI::VTYPE_ERROR:
 		case BaseNativeAPI::VTYPE_EMPTY:
 			return Undefined();
 		default:
 			throw std::runtime_error("<unsupported variant type>");
 		}
+	}
+
+	inline void wstringToWCHAR(const std::wstring& source, WCHAR_T* dst) {
+		#ifdef _WINDOWS
+			lstrcpyW(dst, source.c_str());
+		#else
+			const wchar_t* ptr = source.c_str();
+			for (int i = 0; i < source.size() + 1; i++) {
+				dst[i] = ptr[i];
+			}
+        #endif
 	}
 
 	inline void putDoubleInVariant(const double value, BaseNativeAPI::tVariant* var) {
@@ -40,14 +53,14 @@ namespace Addin1C {
 	}
 
 	inline void putWStringInVariant(const std::wstring& str, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
-		wchar_t* ptr;
-		auto size = (str.size() + 1) * sizeof(wchar_t);
+		WCHAR_T* ptr;
+		auto size = (str.size() + 1) * sizeof(WCHAR_T);
 
 		if (!memoryManager->AllocMemory((void**)&ptr, size)) {
 			throw std::bad_alloc();
 		}
 
-		memcpy(ptr, str.c_str(), size);
+		wstringToWCHAR(str, ptr);
 
 		TV_VT(var) = BaseNativeAPI::VTYPE_PWSTR;
 		TV_WSTR(var) = ptr;
@@ -62,7 +75,7 @@ namespace Addin1C {
 			throw std::bad_alloc();
 		}
 
-		memcpy(ptr, str.c_str(), size);
+		std::memcpy(ptr, str.c_str(), size);
 
 		TV_VT(var) = BaseNativeAPI::VTYPE_PSTR;
 		TV_STR(var) = ptr;
@@ -74,7 +87,7 @@ namespace Addin1C {
 		TV_VT(var) = BaseNativeAPI::VTYPE_BLOB;
 	}
 
-	void packVariant(Variant& svar, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
+	void packVariant(const Variant& svar, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
 		if (svar.type() == typeid(std::wstring))
 			putWStringInVariant(svar.getValue<std::wstring>(), var, memoryManager);
 		else if (svar.type() == typeid(std::string))

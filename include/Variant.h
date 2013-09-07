@@ -5,6 +5,7 @@
 #include <string>
 #include <exception>
 #include <vector>
+#include <typeinfo>
 
 #include "BaseNativeAPI.h"
 
@@ -17,7 +18,7 @@ namespace Addin1C {
 
 	class Variant;
 	Variant extractVariant(BaseNativeAPI::tVariant* var);
-	void packVariant(Variant& svar, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager*);
+	void packVariant(const Variant& svar, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager*);
 
 	class Undefined {};
 
@@ -32,7 +33,7 @@ namespace Addin1C {
 
 	class Variant {
 		friend class VariantParameters;
-		
+
 	public:
 		class BadCast : public std::exception {
 			virtual const char* what() const throw() {
@@ -72,7 +73,7 @@ namespace Addin1C {
 		}
 
 		template <class T>
-		T getValue() {
+		T getValue() const {
 			if (typeid(T) != mContent->type()) throw BadCast();
 			return (static_cast<Variant::ConcreteContent<T>*>(mContent))->mValue;
 		}
@@ -88,7 +89,7 @@ namespace Addin1C {
 
 		template <class T>
 		class ConcreteContent: public Content {
-		public: 
+		public:
 			ConcreteContent(const T& value): mValue(value) {}
 
 			virtual const std::type_info& type() const { return typeid(T); }
@@ -108,7 +109,7 @@ namespace Addin1C {
 			Variant variant;
 			Variant::Content* content;
 		};
-		
+
 		std::vector<VariantWithInitialContent> mParameters;
 
 	public:

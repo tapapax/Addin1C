@@ -4,8 +4,10 @@
 
 #include <map>
 #include <set>
+#include <typeinfo>
 
 #include "BaseNativeAPI.h"
+#include "Metadata.h"
 
 namespace Addin1C {
 
@@ -35,14 +37,14 @@ namespace Addin1C {
 			mRegistered.insert(type);
 		}
 
-		const wchar_t* getClassNames();
+		const WCHAR_T* getClassNames();
 
-		AbstractAddinObject* createObject(std::wstring className);
+		AbstractAddinObject* createObject(const engineString& className);
 
-		bool typeIsRegistered(size_t);
+		bool typeIsRegistered(const size_t);
 
-	private:        
-		std::map<std::wstring, AbstractAddinObject*> mObjects;
+	private:
+		std::map<engineString, AbstractAddinObject*> mObjects;
 		std::set<size_t> mRegistered;
 
 		AddinManager() {};

@@ -2,10 +2,15 @@
 #ifndef _SMART_COMPONENT_BASE_H_
 #define _SMART_COMPONENT_BASE_H_
 
+#ifdef _WINDOWS
 #include <WTypes.h>
+#endif
+
+#include <wctype.h>
 #include <string>
 #include <vector>
 #include <functional>
+#include <algorithm>
 
 #include "Metadata.h"
 #include "Variant.h"
@@ -16,6 +21,9 @@
 
 namespace Addin1C {
 
+	void wstringToWCHAR(const std::wstring& source, WCHAR_T* dst);
+	bool isEqualICase(const std::wstring& l, const WCHAR_T* r);
+
 	template <class ConcreteAddin>
 	class AddinObject : public AbstractAddinObject {
 	public:
@@ -25,7 +33,7 @@ namespace Addin1C {
 		virtual ~AddinObject() {}
 
 		Variant getErrorDescription(VariantParameters&);
-		void message(std::wstring msg, long code = 0);
+		void message(const std::wstring& msg, const long code = 0);
 
 	private:
 		friend class AddinManager;
@@ -38,7 +46,7 @@ namespace Addin1C {
 
 		static inline Metadata& getMetadata() {
 			static Metadata md = ConcreteAddin::getMetadata();
-			md.addFunction(L"ErrorDescription", L"ÎïèñàíèåÎøèáêè", 0, &ConcreteAddin::getErrorDescription);
+			md.addFunction(L"ErrorDescription", L"ÃŽÃ¯Ã¨Ã±Ã Ã­Ã¨Ã¥ÃŽÃ¸Ã¨Ã¡ÃªÃ¨", 0, &ConcreteAddin::getErrorDescription);
 			return md;
 		}
 
@@ -65,7 +73,7 @@ namespace Addin1C {
 		virtual long ADDIN_API FindMethod(const WCHAR_T* wsMethodName);
 		virtual const WCHAR_T* ADDIN_API GetMethodName(const long lMethodNum, const long lMethodAlias);
 		virtual long ADDIN_API GetNParams(const long lMethodNum);
-		virtual bool ADDIN_API GetParamDefValue(const long lMethodNum, const long lParamNum, BaseNativeAPI::tVariant *pvarParamDefValue);   
+		virtual bool ADDIN_API GetParamDefValue(const long lMethodNum, const long lParamNum, BaseNativeAPI::tVariant *pvarParamDefValue);
 		virtual bool ADDIN_API HasRetVal(const long lMethodNum);
 		virtual bool ADDIN_API CallAsProc(const long lMethodNum, BaseNativeAPI::tVariant* paParams, const long lSizeArray);
 		virtual bool ADDIN_API CallAsFunc(const long lMethodNum, BaseNativeAPI::tVariant* pvarRetValue, BaseNativeAPI::tVariant* paParams, const long lSizeArray);
@@ -105,14 +113,14 @@ namespace Addin1C {
 	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::Init(void* pConnection) { 
+	bool AddinObject<ConcreteAddin>::Init(void* pConnection) {
 		mConnect = (BaseNativeAPI::IAddInDefBase*)pConnection;
 		return mConnect != NULL;
 	}
 
 	template <class ConcreteAddin>
-	long AddinObject<ConcreteAddin>::GetInfo() { 
-		return 2000; 
+	long AddinObject<ConcreteAddin>::GetInfo() {
+		return 2000;
 	}
 
 	template <class ConcreteAddin>
@@ -121,38 +129,39 @@ namespace Addin1C {
 	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::RegisterExtensionAs(WCHAR_T** wsExtensionName) { 
-		const std::wstring& name = metadata().name();
-	
-		if (!mMemoryManager) return false;
-		if (!mMemoryManager->AllocMemory((void**)wsExtensionName, (name.size() + 1) * sizeof(WCHAR_T))) return false;
+	bool AddinObject<ConcreteAddin>::RegisterExtensionAs(WCHAR_T** wsExtensionName) {
+		const engineString& name = metadata().name();
 
-		lstrcpyW(*wsExtensionName, name.c_str());
+		size_t bytes = (name.size() + 1) * sizeof(WCHAR_T);
+		if (!mMemoryManager || !mMemoryManager->AllocMemory((void**)wsExtensionName, bytes))
+			return false;
 
-		return true; 
+		memcpy(*wsExtensionName, name.c_str(), bytes);
+
+		return true;
 	}
 
 	template <class ConcreteAddin>
-	long AddinObject<ConcreteAddin>::GetNProps() { 
+	long AddinObject<ConcreteAddin>::GetNProps() {
 		return metadata().properties().size();
 	}
 
 	template <class ConcreteAddin>
-	long AddinObject<ConcreteAddin>::FindProp(const WCHAR_T* wsPropName) { 
+	long AddinObject<ConcreteAddin>::FindProp(const WCHAR_T* wsPropName) {
 		auto& props = metadata().properties();
-	
+
 		for (auto i = 0U; i < props.size(); i++) {
-			if (_wcsicmp(props[i].englishName.c_str(), wsPropName) == 0 ||
-				_wcsicmp(props[i].localName.c_str(), wsPropName) == 0) return i;
+			if (isEqualICase(props[i].englishName, wsPropName)
+                || isEqualICase(props[i].localName, wsPropName)) return i;
 		}
 
 		return -1;
 	}
 
 	template <class ConcreteAddin>
-	const WCHAR_T* AddinObject<ConcreteAddin>::GetPropName(long lPropNum, long lPropAlias) { 
+	const WCHAR_T* AddinObject<ConcreteAddin>::GetPropName(long lPropNum, long lPropAlias) {
 		auto& props = metadata().properties();
-	
+
 		if ((unsigned long)lPropNum >= props.size()) return NULL;
 
 		const std::wstring* name;
@@ -164,16 +173,16 @@ namespace Addin1C {
 
 		if (!mMemoryManager) return NULL;
 
-		wchar_t* result;
+		WCHAR_T* result;
 		if (!mMemoryManager->AllocMemory((void**)&result, (name->size() + 1) * sizeof(WCHAR_T))) return NULL;
 
-		lstrcpyW(result, name->c_str());
+		wstringToWCHAR(*name, result);
 
 		return result;
 	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::GetPropVal(const long lPropNum, BaseNativeAPI::tVariant* pvarPropVal) { 
+	bool AddinObject<ConcreteAddin>::GetPropVal(const long lPropNum, BaseNativeAPI::tVariant* pvarPropVal) {
 		auto& props = metadata().properties();
 
 		if ((unsigned long)lPropNum >= props.size()) return false;
@@ -195,7 +204,7 @@ namespace Addin1C {
 	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::SetPropVal(const long lPropNum, BaseNativeAPI::tVariant *varPropVal) { 
+	bool AddinObject<ConcreteAddin>::SetPropVal(const long lPropNum, BaseNativeAPI::tVariant *varPropVal) {
 		auto& props = metadata().properties();
 
 		if ((unsigned long)lPropNum >= props.size()) return false;
@@ -217,7 +226,7 @@ namespace Addin1C {
 	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::IsPropReadable(const long lPropNum) { 
+	bool AddinObject<ConcreteAddin>::IsPropReadable(const long lPropNum) {
 		auto& props = metadata().properties();
 
 		if ((unsigned long)lPropNum >= props.size()) return false;
@@ -235,24 +244,24 @@ namespace Addin1C {
 	}
 
 	template <class ConcreteAddin>
-	long AddinObject<ConcreteAddin>::GetNMethods() { 
+	long AddinObject<ConcreteAddin>::GetNMethods() {
 		return metadata().functions().size();
 	}
 
 	template <class ConcreteAddin>
-	long AddinObject<ConcreteAddin>::FindMethod(const WCHAR_T* wsMethodName) { 
+	long AddinObject<ConcreteAddin>::FindMethod(const WCHAR_T* wsMethodName) {
 		auto& funcs = metadata().functions();
 
 		for (auto i = 0U; i < funcs.size(); i++) {
-			if (_wcsicmp(funcs[i].englishName.c_str(), wsMethodName) == 0 ||
-				_wcsicmp(funcs[i].localName.c_str(), wsMethodName) == 0) return i;
+			if (isEqualICase(funcs[i].englishName, wsMethodName) ||
+				isEqualICase(funcs[i].localName, wsMethodName)) return i;
 		}
 
 		return -1;
 	}
 
 	template <class ConcreteAddin>
-	const WCHAR_T* AddinObject<ConcreteAddin>::GetMethodName(const long lMethodNum, const long lMethodAlias) { 
+	const WCHAR_T* AddinObject<ConcreteAddin>::GetMethodName(const long lMethodNum, const long lMethodAlias) {
 		auto& funcs = metadata().functions();
 
 		if ((size_t)lMethodNum >= funcs.size()) return NULL;
@@ -266,16 +275,16 @@ namespace Addin1C {
 
 		if (!mMemoryManager) return NULL;
 
-		wchar_t* result;
+		WCHAR_T* result;
 		if (!mMemoryManager->AllocMemory((void**)&result, (name->size() + 1) * sizeof(WCHAR_T))) return NULL;
 
-		lstrcpyW(result, name->c_str());
+		wstringToWCHAR(*name, result);
 
 		return result;
 	}
 
 	template <class ConcreteAddin>
-	long AddinObject<ConcreteAddin>::GetNParams(const long lMethodNum) { 
+	long AddinObject<ConcreteAddin>::GetNParams(const long lMethodNum) {
 		auto& funcs = metadata().functions();
 
 		if ((size_t)lMethodNum >= funcs.size()) return 0;
@@ -284,7 +293,7 @@ namespace Addin1C {
 	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::GetParamDefValue(const long lMethodNum, const long lParamNum, BaseNativeAPI::tVariant *pvarParamDefValue) { 
+	bool AddinObject<ConcreteAddin>::GetParamDefValue(const long lMethodNum, const long lParamNum, BaseNativeAPI::tVariant *pvarParamDefValue) {
 		if ((size_t)lMethodNum >= metadata().functions().size()) return false;
 
 		if (lParamNum >= metadata().functions()[lMethodNum].parametersCount - metadata().functions()[lMethodNum].optionalParametersCount) {
@@ -294,20 +303,20 @@ namespace Addin1C {
 		}
 
 		return true;
-	} 
+	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::HasRetVal(const long lMethodNum) { 
+	bool AddinObject<ConcreteAddin>::HasRetVal(const long lMethodNum) {
 		return true;
 	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::CallAsProc(const long lMethodNum, BaseNativeAPI::tVariant* paParams, const long lSizeArray) { 
+	bool AddinObject<ConcreteAddin>::CallAsProc(const long lMethodNum, BaseNativeAPI::tVariant* paParams, const long lSizeArray) {
 		return false;
 	}
 
 	template <class ConcreteAddin>
-	bool AddinObject<ConcreteAddin>::CallAsFunc(const long lMethodNum, BaseNativeAPI::tVariant* pvarRetValue, BaseNativeAPI::tVariant* paParams, const long lSizeArray) { 
+	bool AddinObject<ConcreteAddin>::CallAsFunc(const long lMethodNum, BaseNativeAPI::tVariant* pvarRetValue, BaseNativeAPI::tVariant* paParams, const long lSizeArray) {
 		auto& funcs = metadata().functions();
 
 		if ((size_t)lMethodNum >= funcs.size()) return false;
@@ -320,7 +329,7 @@ namespace Addin1C {
 
 			// call the handler function
 			Variant result = ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(funcs[lMethodNum].method)(smartParameters);
-		
+
 			// pack back parameters (changed only)
 			smartParameters.pack(paParams, mMemoryManager);
 
@@ -339,7 +348,9 @@ namespace Addin1C {
 
 	template <class ConcreteAddin>
 	void AddinObject<ConcreteAddin>::SetLocale(const WCHAR_T* loc) {
-		_wsetlocale(LC_ALL, loc);
+		#ifdef _WINDOWS
+			_wsetlocale(LC_ALL, loc);
+		#endif
 	}
 
 	template <class ConcreteAddin>
@@ -349,11 +360,35 @@ namespace Addin1C {
 	}
 
 	template <class ConcreteAddin>
-	void AddinObject<ConcreteAddin>::message(std::wstring msg, long code /*= 0*/) {
+	void AddinObject<ConcreteAddin>::message(const std::wstring& msg, const long code /*= 0*/) {
 		if (!mConnect) return;
-		mConnect->AddError(ADDIN_E_INFO, metadata().name().c_str(), msg.c_str(), code);
+
+		#ifdef _WINDOWS
+            mConnect->AddError(ADDIN_E_INFO, metadata().name().c_str(), msg.c_str(), code);
+		#else
+            const auto& addinName = metadata().name();
+            std::basic_string<WCHAR_T> source(addinName.cbegin(), addinName.cend());
+
+            mConnect->AddError(ADDIN_E_INFO, source.c_str(), std::basic_string<WCHAR_T>(msg.cbegin(), msg.cend()).c_str(), code);
+		#endif
 	}
 
-}
+	inline bool isEqualICase(const std::wstring& l, const WCHAR_T* r) {
+		#ifdef _WINDOWS
+			return _wcsicmp(l.c_str(), r) == 0;
+		#else
+			if (!r) return false;
+
+			size_t r_size = 0;
+			for (; r[r_size]; r_size++) {}
+
+			return l.size() == r_size
+				&& std::equal(l.cbegin(), l.cend(), r,
+				[](std::wstring::value_type l1, WCHAR_T r1)
+					{ return std::towupper(l1) == std::towupper(r1); });
+		#endif
+	}
+
+} // namespace Addin1C
 
 #endif

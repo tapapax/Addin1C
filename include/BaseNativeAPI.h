@@ -17,6 +17,18 @@ namespace Addin1C {
 
 	}
 
+inline void wstringToWCHAR(const std::wstring& source, WCHAR_T* dst) {
+#ifdef _WINDOWS
+	memcpy(dst, source.c_str(), (source.size() + 1) * sizeof(wchar_t));
+#else
+	const wchar_t* ptr = source.c_str();
+	for (int i = 0; i < source.size() + 1; i++) {
+		dst[i] = ptr[i];
+	}
+#endif
+}
+
+
 }
 
 #endif // BaseNativeAPI_h__

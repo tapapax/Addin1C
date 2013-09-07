@@ -26,17 +26,6 @@ namespace Addin1C {
 		}
 	}
 
-	inline void wstringToWCHAR(const std::wstring& source, WCHAR_T* dst) {
-		#ifdef _WINDOWS
-			lstrcpyW(dst, source.c_str());
-		#else
-			const wchar_t* ptr = source.c_str();
-			for (int i = 0; i < source.size() + 1; i++) {
-				dst[i] = ptr[i];
-			}
-        #endif
-	}
-
 	inline void putDoubleInVariant(const double value, BaseNativeAPI::tVariant* var) {
 		TV_VT(var) = BaseNativeAPI::VTYPE_R8;
 		TV_R8(var) = value;

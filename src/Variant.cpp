@@ -52,9 +52,9 @@ inline void putWStringInVariant(const std::wstring& str, BaseNativeAPI::tVariant
 #ifdef _WINDOWS
 	memcpy(ptr, str.c_str(), bytes);
 #else
-	const wchar_t* ptr = str.c_str();
+	const wchar_t* strPtr = str.c_str();
 	for (int i = 0; i < str.size() + 1; i++) {
-		ptr[i] = ptr[i];
+		ptr[i] = strPtr[i];
 	}
 #endif
 

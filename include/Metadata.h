@@ -16,7 +16,7 @@ class ClassMetadata {
 	typedef Variant (Object::*ComponentFunction)(VariantParameters&);
 	typedef void (Object::*ComponentParameterSetter)(Variant);
 	typedef Variant (Object::*ComponentParameterGetter)();
-	
+
 private:
 	struct Function {
 		platformString englishName;
@@ -32,13 +32,12 @@ private:
 		ComponentParameterSetter setter;
 		ComponentParameterGetter getter;
 	};
-	
-public:	
-	ClassMetadata(const std::wstring& name)
-		:
-		mName(name)
-	{}
-	
+
+public:
+	ClassMetadata(const std::wstring& name) {
+        mName = convertStringToPlatform(name);
+	}
+
 	void addFunction(const std::wstring& englishName, const std::wstring& localName, long parametersCount, ComponentFunction method, const long optionalParametersCount = 0) {
 		Function func = { convertStringToPlatform(englishName), convertStringToPlatform(localName), parametersCount, optionalParametersCount, method };
 		mFunctions.push_back(func);
@@ -47,14 +46,14 @@ public:
 		Property prop = { convertStringToPlatform(englishName), convertStringToPlatform(localName), modes, setter, getter };
 		mProperties.push_back(prop);
 	}
-	
+
 	const platformString& name() { return mName; }
 	const std::vector<Function>& functions() { return mFunctions; }
 	const std::vector<Property>& properties() { return mProperties; }
-	
+
 private:
 	platformString mName;
-	
+
 	std::vector<Function> mFunctions;
 	std::vector<Property> mProperties;
 };

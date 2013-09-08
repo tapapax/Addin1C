@@ -11,46 +11,47 @@
 
 namespace Addin1C {
 
-	class AbstractAddinObject : public BaseNativeAPI::IComponentBase {
-	public:
-		virtual AbstractAddinObject* clone() = 0;
-	};
+class AbstractAddinObject : public BaseNativeAPI::IComponentBase {
+public:
+	virtual AbstractAddinObject* createNewInstance() = 0;
+};
 
-	class AddinManager {
-	public:
-		~AddinManager() {};
+class AddinManager {
+public:
+	~AddinManager() {};
 
-		static AddinManager& getSingleton(void) {
-			static AddinManager singleton;
-			return singleton;
-		}
+	static AddinManager& getSingleton(void) {
+		static AddinManager singleton;
+		return singleton;
+	}
 
-		template <class Object>
-		void registerObject(Object* object) {
-			size_t type = typeid(object).hash_code();
+	template <class Object>
+	void registerObject(Object* object);
 
-			if (typeIsRegistered(type)) {
-				return;
-			}
+	const WCHAR_T* getClassNames();
+	AbstractAddinObject* createObject(const platformString& className);
+	bool typeIsRegistered(const size_t);
 
-			mObjects[object->metadata().name()] = object;
-			mRegistered.insert(type);
-		}
+private:
+	std::map<platformString, AbstractAddinObject*> mObjects;
+	std::set<size_t> mRegistered;
 
-		const WCHAR_T* getClassNames();
+	AddinManager() {};
+	AddinManager(const AddinManager& root);
+	AddinManager& operator=(const AddinManager&);
+};
 
-		AbstractAddinObject* createObject(const engineString& className);
+template <class Object>
+inline void AddinManager::registerObject(Object* object) {
+	size_t type = typeid(object).hash_code();
 
-		bool typeIsRegistered(const size_t);
+	if (typeIsRegistered(type)) {
+		return;
+	}
 
-	private:
-		std::map<engineString, AbstractAddinObject*> mObjects;
-		std::set<size_t> mRegistered;
-
-		AddinManager() {};
-		AddinManager(const AddinManager& root);
-		AddinManager& operator=(const AddinManager&);
-	};
+	mObjects[object->metadata().name()] = object;
+	mRegistered.insert(type);
+}
 
 }
 

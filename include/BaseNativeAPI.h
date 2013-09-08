@@ -9,25 +9,39 @@
 
 namespace Addin1C {
 
-	namespace BaseNativeAPI {
+namespace BaseNativeAPI {
 
 #include "BaseNativeAPI/ComponentBase.h"
 #include "BaseNativeAPI/AddInDefBase.h"
 #include "BaseNativeAPI/IMemoryManager.h"
 
-	}
+} // namespace BaseNativeAPI
 
-inline void wstringToWCHAR(const std::wstring& source, WCHAR_T* dst) {
+typedef std::basic_string<WCHAR_T> platformString;
+
+inline platformString convertStringToPlatform(const std::wstring& source) {
 #ifdef _WINDOWS
-	memcpy(dst, source.c_str(), (source.size() + 1) * sizeof(wchar_t));
+	return source;
 #else
-	const wchar_t* ptr = source.c_str();
-	for (int i = 0; i < source.size() + 1; i++) {
-		dst[i] = ptr[i];
-	}
+	return platformString(source.cbegin(), source.cend());
 #endif
 }
 
+inline bool isEqualICase(const platformString& l, const WCHAR_T* r) {
+#ifdef _WINDOWS
+	return _wcsicmp(l.c_str(), r) == 0;
+#else
+	if (!r) return false;
+
+	size_t r_size = 0;
+	for (; r[r_size]; r_size++) {}
+
+	return l.size() == r_size
+		&& std::equal(l.cbegin(), l.cend(), r,
+		[](std::wstring::value_type l1, WCHAR_T r1)
+	{ return std::towupper(l1) == std::towupper(r1); });
+#endif
+}
 
 }
 

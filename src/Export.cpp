@@ -5,7 +5,7 @@ extern "C" long GetClassObject(const WCHAR_T* wsName, Addin1C::BaseNativeAPI::IC
     if(*pInterface) return 0;
 
 	try {
-		*pInterface = Addin1C::AddinManager::getSingleton().createObject(Addin1C::engineString(wsName));
+		*pInterface = Addin1C::AddinManager::getSingleton().createObject(Addin1C::platformString(wsName));
 	} catch (...) {
 		return 0;
 	}

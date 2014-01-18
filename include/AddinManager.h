@@ -11,14 +11,20 @@
 
 namespace Addin1C {
 
-class AbstractAddinObject : public BaseNativeAPI::IComponentBase {
+class AbstractObjectCreator {
 public:
-	virtual AbstractAddinObject* createNewInstance() = 0;
+	virtual BaseNativeAPI::IComponentBase* create() = 0;
+};
+
+template <class Object>
+class ConcreteObjectCreator : public AbstractObjectCreator {
+public:
+	BaseNativeAPI::IComponentBase* create() { return new Object; }
 };
 
 class AddinManager {
 public:
-	~AddinManager() {};
+	~AddinManager();
 
 	static AddinManager& getSingleton(void) {
 		static AddinManager singleton;
@@ -26,15 +32,15 @@ public:
 	}
 
 	template <class Object>
-	void registerObject(Object* object);
+	void registerObject();
 
 	const WCHAR_T* getClassNames();
-	AbstractAddinObject* createObject(const platformString& className);
-	bool typeIsRegistered(const size_t);
+	BaseNativeAPI::IComponentBase* createObject(const platformString& className);
+
+	bool ready();
 
 private:
-	std::map<platformString, AbstractAddinObject*> mObjects;
-	std::set<size_t> mRegistered;
+	std::map<platformString, AbstractObjectCreator*> mObjects;
 
 	AddinManager() {};
 	AddinManager(const AddinManager& root);
@@ -42,15 +48,13 @@ private:
 };
 
 template <class Object>
-inline void AddinManager::registerObject(Object* object) {
-	size_t type = typeid(object).hash_code();
+inline void AddinManager::registerObject() {
+	static bool registered = false;
 
-	if (typeIsRegistered(type)) {
-		return;
-	}
+	if (registered) return;
+	registered = true;
 
-	mObjects[object->metadata().name()] = object;
-	mRegistered.insert(type);
+	mObjects[Object::getName()] = new ConcreteObjectCreator<Object>;
 }
 
 }

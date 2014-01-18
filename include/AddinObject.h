@@ -17,14 +17,12 @@
 #include "AddinManager.h"
 #include "BaseNativeAPI.h"
 
-#define ADDIN1C_REGISTER(Object) static Object prot_ ## Object;
-
 #define ADDIN1C_CALL_CONCRETE_ADDIN_MEMBER(member) ((*(ConcreteAddin*)this).*(member))
 
 namespace Addin1C {
 
 template <class ConcreteAddin>
-class AddinObject : public AbstractAddinObject {
+class AddinObject : public BaseNativeAPI::IComponentBase {
 public:
 	typedef ClassMetadata<ConcreteAddin> Metadata;
 
@@ -41,18 +39,7 @@ private:
 	BaseNativeAPI::IAddInDefBase* mConnect;
 	BaseNativeAPI::IMemoryManager* mMemoryManager;
 
-	AbstractAddinObject* createNewInstance() { return new ConcreteAddin; }
-
-	static inline Metadata& getMetadata() {
-		static Metadata md = ConcreteAddin::getMetadata();
-		md.addFunction(L"ErrorDescription", L"ОписаниеОшибки", 0, &ConcreteAddin::getErrorDescription);
-		return md;
-	}
-
-	static inline Metadata& metadata() {
-		static Metadata& md = getMetadata();
-		return md;
-	}
+	static Metadata& metadata();
 
 	void handleExternalException();
 
@@ -78,6 +65,20 @@ private:
 	virtual bool ADDIN_API CallAsFunc(const long lMethodNum, BaseNativeAPI::tVariant* pvarRetValue, BaseNativeAPI::tVariant* paParams, const long lSizeArray);
 	virtual void ADDIN_API SetLocale(const WCHAR_T* loc);
 };
+
+template <class ConcreteAddin>
+ClassMetadata<ConcreteAddin>& AddinObject<ConcreteAddin>::metadata() {
+	static Metadata md(ConcreteAddin::getName());
+	static bool metadataIsReady = false;
+
+	if (!metadataIsReady) {
+		ConcreteAddin::getMetadata(md);
+		md.addFunction(L"ErrorDescription", L"ОписаниеОшибки", 0, &ConcreteAddin::getErrorDescription);
+		metadataIsReady = true;
+	}
+
+	return md;
+}
 
 template <class ConcreteAddin>
 void Addin1C::AddinObject<ConcreteAddin>::handleExternalException() {
@@ -107,9 +108,7 @@ AddinObject<ConcreteAddin>::AddinObject()
 	:
 	mMemoryManager(NULL),
 	mConnect(NULL)
-{
-	AddinManager::getSingleton().registerObject((ConcreteAddin*)this);
-}
+{}
 
 template <class ConcreteAddin>
 bool AddinObject<ConcreteAddin>::Init(void* pConnection) {

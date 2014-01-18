@@ -5,8 +5,8 @@
 
 namespace Addin1C {
 
-AbstractAddinObject* AddinManager::createObject(const platformString& name) {
-	return mObjects.at(name)->createNewInstance();
+BaseNativeAPI::IComponentBase* AddinManager::createObject(const platformString& name) {
+	return mObjects.at(name)->create();
 }
 
 const WCHAR_T* AddinManager::getClassNames() {
@@ -22,8 +22,14 @@ const WCHAR_T* AddinManager::getClassNames() {
 	return classNames.c_str();
 }
 
-bool AddinManager::typeIsRegistered(const size_t type) {
-	return mRegistered.find(type) != mRegistered.end();
+AddinManager::~AddinManager() {
+	for (auto object = mObjects.cbegin(); object != mObjects.cend(); object++) {
+		delete object->second;
+	}
+}
+
+bool AddinManager::ready() {
+	return !mObjects.empty();
 }
 
 }

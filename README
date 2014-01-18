@@ -1,5 +1,7 @@
 Эта библиотека является враппером для интерфейса компонент, использующих технологию NativeAPI, для платформы 1С:Предприятия 8.x.
 
+Каталог Example содержит пример компоненты. Его можно взять за основу создания своего AddIn'а.
+
 Использование:
 Для определения класса, публикующегося компонентой, необходимо определить класс-наследник шаблонного класса AddinObject, указав в качестве его параметра шаблона имя определяемого класса. Класс должен содержать статическую функию getMetadata, в которой компонента описывает свой интерфейс, состоящий из методов и свойств.
 Пример маленького класса:
@@ -8,10 +10,12 @@
 
 	class Multiplier : public Addin1C::AddinObject<Multiplier> {
 	public:
-		static Metadata getMetadata() {
-			Metadata md(L"Multiplier"); // имя класса
-			md.addFunction(L"MultiplyWith5", L"УмножитьНа5", /*кол-во аргументов*/ 1, &MultiplyWith5);
-			return md;
+		static void getMetadata(Metadata& md) {
+			md.addFunction(L"Multiply5", L"УмножитьНа5", 1, &Multiplier::MultiplyWith5);
+		}
+
+		static std::wstring getName() {
+			return L"Calculator";
 		}
 
 		Addin1C::Variant MultiplyWith5(Addin1C::VariantParameters& parameters) {
@@ -21,7 +25,14 @@
 		}
 	};
 
-Для того, чтобы класс зарегистрировался, как публикуемый, необходимо использовать макрос ADDIN1C_REGISTER(obj) с именем класса в качестве параметра.
+Обязательными для реализация являются статические методы getMetadata и getName.
+
+Кроме определения класса, необходимо определить функцию addinInitialization, выглядеть которая должна примерно так:
+void addinInitialization(Addin1C::AddinManager& manager) {
+	manager.registerObject<Calculator>();
+}
+
+Перечисленные в ней классы будут доступны для создания в коде 1С.
 
 Для передачи значений используется тип Addin1C::Variant.
 Поддерживаемые типы данных в объекте Addin1C::Variant:

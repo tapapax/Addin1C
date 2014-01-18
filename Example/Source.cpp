@@ -1,4 +1,7 @@
 
 #include "Header.h"
 
-ADDIN1C_REGISTER(Calculator);
+void addinInitialization(Addin1C::AddinManager& manager) {
+	manager.registerObject<Calculator>();
+	manager.registerObject<Keeper>();
+}

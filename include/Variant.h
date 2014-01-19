@@ -78,6 +78,10 @@ namespace Addin1C {
 			return (static_cast<Variant::ConcreteContent<T>*>(mContent))->mValue;
 		}
 
+		void packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+			if (mContent) mContent->packTo1cVariant(var, memoryManager);
+		}
+
 	private:
 		class Content {
 		public:
@@ -85,6 +89,8 @@ namespace Addin1C {
 
 			virtual const std::type_info& type() const = 0;
 			virtual Content* clone() const = 0;
+
+			virtual void packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const = 0;
 		};
 
 		template <class T>
@@ -97,6 +103,8 @@ namespace Addin1C {
 			virtual ConcreteContent* clone() const {
 				return new ConcreteContent(mValue);
 			}
+
+			virtual void packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const;
 
 			T mValue;
 		};

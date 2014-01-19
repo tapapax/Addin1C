@@ -26,43 +26,6 @@ Variant extractVariant(BaseNativeAPI::tVariant* var) {
 	}
 }
 
-inline void putDoubleInVariant(const double value, BaseNativeAPI::tVariant* var) {
-	TV_VT(var) = BaseNativeAPI::VTYPE_R8;
-	TV_R8(var) = value;
-}
-
-inline void putLongInVariant(const long value, BaseNativeAPI::tVariant* var) {
-	TV_VT(var) = BaseNativeAPI::VTYPE_I4;
-	TV_I4(var) = value;
-}
-
-inline void putBoolInVariant(const bool value, BaseNativeAPI::tVariant* var) {
-	TV_VT(var) = BaseNativeAPI::VTYPE_BOOL;
-	TV_BOOL(var) = value;
-}
-
-inline void putWStringInVariant(const std::wstring& str, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
-	WCHAR_T* ptr;
-	size_t bytes = (str.size() + 1) * sizeof(WCHAR_T);
-
-	if (!memoryManager->AllocMemory((void**)&ptr, bytes)) {
-		throw std::bad_alloc();
-	}
-
-#ifdef _WINDOWS
-	memcpy(ptr, str.c_str(), bytes);
-#else
-	const wchar_t* strPtr = str.c_str();
-	for (int i = 0; i < str.size() + 1; i++) {
-		ptr[i] = strPtr[i];
-	}
-#endif
-
-	TV_VT(var) = BaseNativeAPI::VTYPE_PWSTR;
-	TV_WSTR(var) = ptr;
-	var->wstrLen = str.size();
-}
-
 inline void putStringInVariant(const std::string& str, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
 	char* ptr;
 	auto size = (str.size() + 1) * sizeof(char);
@@ -78,27 +41,65 @@ inline void putStringInVariant(const std::string& str, BaseNativeAPI::tVariant* 
 	var->strLen = str.size();
 }
 
-inline void putBinaryInVariant(const BinaryData& blob, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager){
-	putStringInVariant(blob.getData(), var, memoryManager);
+template <>
+void Variant::ConcreteContent<double>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+	TV_VT(var) = BaseNativeAPI::VTYPE_R8;
+	TV_R8(var) = mValue;
+}
+
+template <>
+void Variant::ConcreteContent<long>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+	TV_VT(var) = BaseNativeAPI::VTYPE_I4;
+	TV_I4(var) = mValue;
+}
+
+template <>
+void Variant::ConcreteContent<bool>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+	TV_VT(var) = BaseNativeAPI::VTYPE_BOOL;
+	TV_BOOL(var) = mValue;
+}
+
+template <>
+void Variant::ConcreteContent<std::wstring>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+	WCHAR_T* ptr;
+	size_t bytes = (mValue.size() + 1) * sizeof(WCHAR_T);
+
+	if (!memoryManager->AllocMemory((void**)&ptr, bytes)) {
+		throw std::bad_alloc();
+	}
+
+#ifdef _WINDOWS
+	memcpy(ptr, mValue.c_str(), bytes);
+#else
+	const wchar_t* strPtr = str.c_str();
+	for (int i = 0; i < str.size() + 1; i++) {
+		ptr[i] = strPtr[i];
+	}
+#endif
+
+	TV_VT(var) = BaseNativeAPI::VTYPE_PWSTR;
+	TV_WSTR(var) = ptr;
+	var->wstrLen = mValue.size();
+}
+
+template <>
+void Variant::ConcreteContent<std::string>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+	putStringInVariant(mValue, var, memoryManager);
+}
+
+template <>
+void Variant::ConcreteContent<BinaryData>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+	putStringInVariant(mValue.getData(), var, memoryManager);
 	TV_VT(var) = BaseNativeAPI::VTYPE_BLOB;
 }
 
+template <class T>
+void Variant::ConcreteContent<T>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+	throw std::runtime_error("<cannot cast variable>");
+}
+
 void packVariant(const Variant& svar, BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) {
-	if (svar.type() == typeid(std::wstring))
-		putWStringInVariant(svar.getValue<std::wstring>(), var, memoryManager);
-	else if (svar.type() == typeid(std::string))
-		putStringInVariant(svar.getValue<std::string>(), var, memoryManager);
-	else if (svar.type() == typeid(double))
-		putDoubleInVariant(svar.getValue<double>(), var);
-	else if (svar.type() == typeid(bool))
-		putBoolInVariant(svar.getValue<bool>(), var);
-	else if (svar.type() == typeid(BinaryData))
-		putBinaryInVariant(svar.getValue<BinaryData>(), var, memoryManager);
-	else if (svar.type() == typeid(long))
-		putLongInVariant(svar.getValue<long>(), var);
-	else if (svar.type() == typeid(Undefined))
-		var->vt = BaseNativeAPI::VTYPE_EMPTY;
-	else throw std::runtime_error("<cannot cast variable>");
+	svar.packTo1cVariant(var, memoryManager);
 }
 
 }

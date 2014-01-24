@@ -93,6 +93,11 @@ void Variant::ConcreteContent<BinaryData>::packTo1cVariant(BaseNativeAPI::tVaria
 	TV_VT(var) = BaseNativeAPI::VTYPE_BLOB;
 }
 
+template <>
+void Variant::ConcreteContent<Undefined>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
+	TV_VT(var) = BaseNativeAPI::VTYPE_EMPTY;
+}
+
 template <class T>
 void Variant::ConcreteContent<T>::packTo1cVariant(BaseNativeAPI::tVariant* var, BaseNativeAPI::IMemoryManager* memoryManager) const {
 	throw std::runtime_error("<cannot cast variable>");
